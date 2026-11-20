@@ -1,25 +1,26 @@
 # Paralelização do Conjunto de Mandelbrot com OpenMP
 
 Grupo:
-  Cauê de Almeida Gonçalves
-  Kayke Guilherme Vertu
-  Thias Larriane Guimarães Barbosa
+- Cauê de Almeida Gonçalves
+- Kayke Guilherme Vertu
+- Thais Larriane Guimarães Barbosa
 
-Aplicação: https://github.com/hpc-fci-mackenzie/mpp/blob/master/17/mandelbrot.zip
+Aplicação: <https://github.com/hpc-fci-mackenzie/mpp/blob/master/17/mandelbrot.zip>
 
 ## Compilação e execução
 
 Compilar:
 
-Versão Sequêncial:
-  Compilar o projeto:
-    gcc -O3 -std=c++11 mandelbrot_seq.cpp -o mandelbrot_seq.exe -lstdc++
+- Versão Sequêncial:
+  - Compilar o projeto: 
+    ```sh
+    make seq
+    ```
   
-  Gerar o CSV:
-    echo leitura_s,calculo_s,escrita_s,total_s > tempos_seq.csv
-  
-  Gerar as saídas 5 vezes:
-  for /L %i in (1,1,5) do mandelbrot_seq.exe < mandelbrot.in >> tempos_seq.csv
+  - Gerar as saídas 5 vezes:
+    ```sh
+    ./executar.sh seq.csv 5 "cat mandelbrot.in | ./seq"
+    ```
 
 Versão Paralela:
 
@@ -28,7 +29,7 @@ Versão Paralela:
 ## Descrição do problema e análise do código sequencial
 O programa irá gerar uma imagem em texto do conjunto de Mandelbrot, ele é formado pelos números complexos c para os quais a sequência z = z² + c não diverge.
 
-Cada pixel da imagem (230 linhas × 790 colunas) representa um ponto do plano complexo. O programa executar a fórmula até z passar de 2 ou até atingir 24.000 iterações. Pontos do conjunto são marcados com "#", e os demais com "." O cálculo ocupa [inserir tempo]% do tempo de execução ([ inserir tempo ] s). 
+Cada pixel da imagem (230 linhas × 790 colunas) representa um ponto do plano complexo. O programa executa a fórmula até z passar de 2 ou até atingir 24.000 iterações. Pontos do conjunto são marcados com "#", e os demais com "." O cálculo ocupa [inserir tempo]% do tempo de execução ([ inserir tempo ] s). 
 
 O código tem três etapas: leitura da entrada e alocação da matriz, cálculo de todos os pixels e escrita da matriz na saída. Medindo cada etapa separadamente, o cálculo ocupa [ Inserir tempo ]% do tempo total ([inserir tempo] s), enquanto a leitura e a escrita juntas levam menos de [ inserir tempo ] ms. O custo computacional está, portanto, quase todo no laço de cálculo.
 
@@ -38,12 +39,14 @@ A leitura e a escrita são descartáveis. Os pixels são independentes entre si,
 
 O trabalho foi dividido por linhas da imagem. O laço externo, que percorre as linhas, foi paralelizado com OpenMP, de modo que cada thread calcula um conjunto de linhas completas:
 
+```c
 #pragma omp parallel for schedule(static ou guided ou dynamic)
 for (int r = 0; r < max_row; ++r) {
     for (int c = 0; c < max_column; ++c) {
         // cálculo do pixel (r, c), igual ao código sequencial
     }
 }
+```
 
 Como dito anteriormente do laço externo cada pixel é calculado de forma independente: o resultado de um pixel não depende do outro. Em contrapartida O laço while, que faz as iterações de cada pixel, não pode ser paralelizado, porque cada novo valor de z depende do valor anterior.
 
@@ -56,25 +59,24 @@ Como visto em aula no nosso projeto a única sincronização é a barreira impl�
 O custo das linhas é muito desigual: as linhas centrais contêm a maior parte dos pontos do conjunto, que executam as 24.000 iterações, enquanto as linhas das bordas terminam rápido. Por este motivo, a forma de dividir as linhas entre as threads tem grande impacto no desempenho.
 
 Foi usado para fins de relatório e estudo:
+  - `schedule(static)`: divide as linhas em blocos contíguos, um por thread. As threads que recebem as linhas centrais ficam com quase todo o trabalho, e as outras terminam cedo e ficam ociosas.
 
-    schedule(static): divide as linhas em blocos contíguos, um por thread. As threads que recebem as linhas centrais ficam com quase todo o trabalho, e as outras terminam cedo e ficam ociosas.
+  - `schedule(static, 1)`: distribui as linhas de forma intercalada (linha 0 para a thread 0, linha 1 para a thread 1, e assim por diante). As linhas caras ficam espalhadas entre todas as threads, sem custo extra de escalonamento.
 
-    schedule(static, 1): distribui as linhas de forma intercalada (linha 0 para a thread 0, linha 1 para a thread 1, e assim por diante). As linhas caras ficam espalhadas entre todas as threads, sem custo extra de escalonamento.
+  - `schedule(dynamic, [chunk])`: cada thread pega um novo bloco de linhas quando termina o anterior. Adapta-se ao custo real de cada linha, com um pequeno custo de escalonamento.
 
-    schedule(dynamic, [chunk]): cada thread pega um novo bloco de linhas quando termina o anterior. Adapta-se ao custo real de cada linha, com um pequeno custo de escalonamento.
-
-    schedule(guided): semelhante ao dynamic, mas começa com blocos grandes e diminui o tamanho ao longo da execução.
+  - `schedule(guided)`: semelhante ao dynamic, mas começa com blocos grandes e diminui o tamanho ao longo da execução.
 
 
 E analisando escolhemos [inserir aqui]
 
 ## Ambiente de testes
 
-- CPU: [ ]
-- Núcleos: [ ]
-- Memória: [ ]
-- Sistema operacional: [ ]
-- Compilador: [ ]
+- CPU: AMD Ryzen 9 5900X
+- Núcleos: 12
+- Memória: 16GB
+- Sistema operacional: CachyOS x86_64
+- Compilador: GCC 16.2.1
 - Flags: `-O3 -std=c++11 -fopenmp`
 
 ## Metodologia
@@ -99,4 +101,3 @@ E analisando escolhemos [inserir aqui]
 - [Nome 3]: [ ]
 
 ## Uso de LLM
-
