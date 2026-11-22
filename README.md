@@ -157,9 +157,18 @@ Todos os dados estão na planilha resultados_mandelbrot.xlsx
 - [Nome 3]: [ ]
 
 ## Uso de LLM
+
+**Planilha Excel**
 Foi solicitado ao claude gerar a planilha para analise do código e gerar os relatórios para os gráficos.
 
-Prompt utilizado:
-Quero um excel para preencher dados de execuções de um código sequencial e em paralelo será executado 5 vezes e com 1, 2, 4, 8 threads. 
+**Dúvidas de montagem do Read.me**
+Foi solicitado ao claude como montar tabelas e inserir imagens no Read.me
+
+**Prompt utilizado:**
+- Quero um excel para preencher dados de execuções de um código sequencial e em paralelo será executado 5 vezes e com 1, 2, 4, 8 threads. 
 Deverá conter os seguintes calculos: tempo/speedup/eficiência.
+- Como inserir imagens no Read.me
+- Como inserir dados em tabelas no Read.me
+
+
 
