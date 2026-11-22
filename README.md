@@ -22,9 +22,6 @@ Compilar:
     ./executar.sh seq.csv 5 "cat mandelbrot.in | ./seq"
     ```
 
-Versão Paralela:
-
--- A FAZER.
 
 ## Descrição do problema e análise do código sequencial
 O programa irá gerar uma imagem em texto do conjunto de Mandelbrot, ele é formado pelos números complexos c para os quais a sequência z = z² + c não diverge.
@@ -81,23 +78,88 @@ E analisando escolhemos [inserir aqui]
 
 ## Metodologia
 
-- Entrada: `mandelbrot.in` (230 linhas, 790 colunas, 24.000 iterações)
-- Número de execuções: [ inserir aqui quantidade de execuções ]
-- [Como os tempos foram medidos e como foram calculados a média e o desvio padrão.]
+**Entrada:** `mandelbrot.in`, a entrada fornecida com o problema: 230 linhas, 790 colunas e no máximo 24.000 iterações por pixel.
+
+**Execuções:** cada configuração foi executada **5 vezes**. Foram medidas a versão sequencial e as três versões paralelas com 1, 2, 4 e 8 threads, num total de 65 execuções. Cada execução é um processo independente.
+
+**Medição:** o tempo de cada etapa (leitura, cálculo e escrita) foi medido dentro do programa com `std::chrono::steady_clock`. O tempo de cálculo das versões paralelas inclui a criação das threads, já que o laço de cálculo é a primeira região paralela do programa. Todas as execuções foram feitas na mesma máquina, e a imagem gerada por cada versão foi comparada com a do código original usando `diff`.
+
+**Estatística:** para cada configuração, foram calculados a média e o desvio padrão amostral das 5 execuções, na planilha `resultados_mandelbrot.xlsx`. A variação foi: o coeficiente de variação (desvio ÷ média) ficou em 0,15% no sequencial e abaixo de 1,1% em todas as configurações paralelas.
+
+**Métricas:**
+
+- Speedup: *S(p) = T_seq ÷ T(p)*, usando o tempo total médio.
+- Eficiência: *E(p) = S(p) ÷ p*.
 
 ## Resultados
 
-[Tempo, speedup e eficiência para 1, 2, 4 e 8 threads.]
+**Versão sequencial** (média ± desvio padrão de 5 execuções):
+
+| Etapa | Tempo (s) | % do total |
+|---|---:|---:|
+| Leitura | 0,000074 ± 0,000007 | 0,0003% |
+| Cálculo | 23,4808 ± 0,0354 | 99,9952% |
+| Escrita | 0,0011 ± 0,00003 | 0,0045% |
+| **Total** | **23,4819 ± 0,0354** | 100% |
+
+**Tempo total médio das versões paralelas** (s, média ± desvio padrão de 5 execuções):
+
+| Threads | Static | Dynamic | Guided |
+|---:|---:|---:|---:|
+| 1 | 23,517 ± 0,021 | 23,804 ± 0,048 | 23,754 ± 0,095 |
+| 2 | 11,993 ± 0,067 | 11,964 ± 0,057 | 12,056 ± 0,017 |
+| 4 | 9,997 ± 0,026 | 6,158 ± 0,010 | 7,448 ± 0,081 |
+| 8 | 6,189 ± 0,019 | 3,197 ± 0,020 | 3,920 ± 0,040 |
+
+**Speedup e eficiência:**
+
+| Threads | Speedup Static | Speedup Dynamic | Speedup Guided | Eficiência Static | Eficiência Dynamic | Eficiência Guided |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 1,00 | 0,99 | 0,99 | 99,9% | 98,6% | 98,9% |
+| 2 | 1,96 | 1,96 | 1,95 | 97,9% | 98,1% | 97,4% |
+| 4 | 2,35 | 3,81 | 3,15 | 58,7% | 95,3% | 78,8% |
+| 8 | 3,79 | **7,35** | 5,99 | 47,4% | **91,8%** | 74,9% |
+
+![Tempo total médio × threads](img/tempo.png)
+
+![Speedup × threads](img/speedup.png)
+
+![Eficiência × threads](img/eficiencia.png)
+
+No gráfico de tempo, as barras de desvio padrão existem, mas são pequenas para aparecer na escala (menos de 0,1 s).
+
+Todos os dados estão na planilha resultados_mandelbrot.xlsx
 
 
 ## Discussão dos resultados e limitações
 
-[Lei de Amdahl, gargalos, overhead e limitações encontradas.]
+**Lei de Amdahl:** a fração sequencial do programa (leitura e escrita) é de apenas 0,0048% do tempo total. Pela Lei de Amdahl, o speedup máximo teórico com 8 threads seria de 7,997. Ou seja, a parte sequencial não é limitante neste problema, e a perda de desempenho observada vem de como o trabalho é dividido entre as threads.
+
+**Comparação entre as estratégias:** o `dynamic` foi a melhor estratégia, com speedup de 7,35 e eficiência de 92% com 8 threads. O `static` foi a pior, com speedup de 3,79 e eficiência de 47%. A diferença vem do desbalanceamento de carga:
+
+- Com `static`, cada thread recebe um bloco contíguo de linhas. Com 4 e 8 threads, as threads que recebem as linhas centrais ficam com quase todo o trabalho, enquanto as das bordas terminam cedo e ficam ociosas. Com 4 threads, o speedup foi de apenas 2,35.
+- Com `dynamic, 1`, as threads pegam uma linha por vez e as linhas caras se espalham entre todas, o que mantém a carga equilibrada mesmo com 8 threads.
+- O `guided` ficou no meio (5,99 com 8 threads). Ele começa distribuindo blocos grandes, e um desses blocos pode concentrar a região central da imagem. Os blocos pequenos do final não são suficientes para compensar esse desequilíbrio inicial.
+
+**Overhead:** com 1 thread, as versões paralelas foram um pouco mais lentas que a sequencial: 0,15% no `static`, 1,37% no `dynamic` e 1,16% no `guided`. Essas estratégias distribuem as linhas durante a execução, o que tem um custo, mas 230 distribuições não deveriam custar 0,3 s como visto nos relatórios. Parte da diferença pode vir do código gerado pelo compilador para a região paralela ou de variações de frequência do processador, e com os testes realizados não conseguimos isolar a causa. Porém, o overhead de criar as threads é pequeno comparado aos segundos de cálculo.
+
+**Limitações:**
+
+- Os testes foram até 8 threads.
+- Foi usada uma única entrada. Não foi testado como o desempenho muda com imagens maiores ou com mais iterações.
+- A leitura e a escrita não foram paralelizadas, mas juntas representam menos de 0,005% do tempo.
+- O cálculo foi mantido igual ao original para uma comparação justa.
 
 ## Contribuição de cada membro
 
-- [Nome 1]: [ ]
+- Cauê de Almeida Gonçalves: Adicionado o temporizador no código sequencial e em paralelo e Read.me
 - [Nome 2]: [ ]
 - [Nome 3]: [ ]
 
 ## Uso de LLM
+Foi solicitado ao claude gerar a planilha para analise do código e gerar os relatórios para os gráficos.
+
+Prompt utilizado:
+Quero um excel para preencher dados de execuções de um código sequencial e em paralelo será executado 5 vezes e com 1, 2, 4, 8 threads. 
+Deverá conter os seguintes calculos: tempo/speedup/eficiência.
+
