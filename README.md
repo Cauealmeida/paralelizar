@@ -11,7 +11,7 @@ Aplicação: <https://github.com/hpc-fci-mackenzie/mpp/blob/master/17/mandelbrot
 
 ### Compilação
 
-Para compilar, use o makefile providenciado:
+Para compilar, utilize o makefile:
 
 ```sh
 make # Gera todos os executáveis
@@ -45,13 +45,13 @@ Para fazer a comparação entre diferentes números de threads, foi alterado a c
 ```
 
 ## Descrição do problema e análise do código sequencial
-O programa irá gerar uma imagem em texto do conjunto de Mandelbrot, ele é formado pelos números complexos c para os quais a sequência z = z² + c não diverge.
+O programa irá gerar uma imagem em texto do conjunto de Mandelbrot que é formado pelos números complexos c para os quais a sequência z = z² + c não diverge.
 
 Cada pixel da imagem (230 linhas × 790 colunas) representa um ponto do plano complexo. O programa executa a fórmula até z passar de 2 ou até atingir 24.000 iterações. Pontos do conjunto são marcados com "#", e os demais com "."
 
-O código tem três etapas: leitura da entrada e alocação da matriz, cálculo de todos os pixels e escrita da matriz na saída. Medindo cada etapa separadamente, o cálculo ocupa 99,995% do tempo total 23,48 s, enquanto a leitura e a escrita juntas levam menos de 1,1 ms. O custo computacional está, portanto, quase todo no laço de cálculo.
+O código tem três etapas: leitura da entrada e alocação da matriz, cálculo de todos os pixels e escrita da matriz na saída. Medindo cada etapa separadamente, o cálculo ocupa 99,995% do tempo total 23,48s, enquanto a leitura e a escrita juntas levam menos de 1,1 ms. O custo computacional está, portanto, quase todo no laço de cálculo.
 
-A leitura e a escrita são descartáveis. Os pixels são independentes entre si, o que deixa possível paralelizar o cálculo. Porém, as iterações de um mesmo pixel são sequenciais, já que os valores dependem dos anteriores. O custo por pixel varia muito: cerca de 68.483 dos 181.700 pixels (38%) dos pixels pertencem ao conjunto e executam as 24.000 iterações, enquanto os demais terminam em poucas iterações. Esses pixels custosos estão nas linhas centrais, causando desbalanceamento de carga entre as threads.
+A leitura e a escrita têm custo desprezível. Os pixels são independentes entre si, o que torna possível paralelizar o cálculo. Porém, as iterações de um mesmo pixel são sequenciais, já que os valores dependem dos anteriores. O custo por pixel varia muito: cerca de 68.483 dos 181.700 pixels (38%) pertencem ao conjunto e executam as 24.000 iterações, enquanto os demais terminam em poucas iterações. Esses pixels custosos estão nas linhas centrais, causando desbalanceamento de carga entre as threads.
 
 ## Estratégia de paralelização
 
@@ -66,13 +66,13 @@ for (int r = 0; r < max_row; ++r) {
 }
 ```
 
-Como dito anteriormente do laço externo cada pixel é calculado de forma independente: o resultado de um pixel não depende do outro. Em contrapartida O laço while, que faz as iterações de cada pixel, não pode ser paralelizado, porque cada novo valor de z depende do valor anterior.
+Como dito anteriormente, no laço externo cada pixel é calculado de forma independente: o resultado de um pixel não depende dos outros. Em contrapartida o laço while, que faz as iterações de cada pixel, não pode ser paralelizado, porque cada novo valor de z depende do valor anterior.
 
-Não há condição de corrida no cálculo. Pois, cada thread escreve nas posições da matriz que das suas linhas, e nenhuma thread lê o que outra escreveu. Por isso, não foi necessário nenhum lock.
+Não há condição de corrida no cálculo, pois cada thread escreve nas posições da matriz correspondentes às suas linhas, e nenhuma thread lê o que outra escreveu. Por isso, não foi necessário nenhum lock.
 
 As variáveis declaradas dentro do laço (c, z e n) são privadas de cada thread. A matriz mat e os parâmetros da entrada (max_row, max_column e max_n) são compartilhados.
 
-Como visto em aula no nosso projeto a única sincronização é a barreira implícita no fim do parallel for: o programa espera todas as threads terminarem antes de escrever a imagem na saída.
+Como visto em aula, no nosso projeto a única sincronização é a barreira implícita no fim do parallel for: o programa espera todas as threads terminarem antes de escrever a imagem na saída.
 
 O custo das linhas é muito desigual: as linhas centrais contêm a maior parte dos pontos do conjunto, que executam as 24.000 iterações, enquanto as linhas das bordas terminam rápido. Por este motivo, a forma de dividir as linhas entre as threads tem grande impacto no desempenho.
 
@@ -84,9 +84,6 @@ Foi usado para fins de relatório e estudo:
   - `schedule(dynamic, [chunk])`: cada thread pega um novo bloco de linhas quando termina o anterior. Adapta-se ao custo real de cada linha, com um pequeno custo de escalonamento.
 
   - `schedule(guided)`: semelhante ao dynamic, mas começa com blocos grandes e diminui o tamanho ao longo da execução.
-
-
-E analisando escolhemos [inserir aqui]
 
 ## Ambiente de testes
 
@@ -147,9 +144,9 @@ E analisando escolhemos [inserir aqui]
 
 ![Eficiência × threads](img/eficiencia.png)
 
-No gráfico de tempo, as barras de desvio padrão existem, mas são pequenas para aparecer na escala (menos de 0,1 s).
+No gráfico de tempo, as barras de desvio padrão existem, mas são pequenas demais para serem vistas na escala (menos de 0,1 s).
 
-Todos os dados estão na planilha resultados_mandelbrot.xlsx
+Todos os dados estão na planilha resultados_mandelbrot.xlsx.
 
 
 ## Discussão dos resultados e limitações
@@ -166,22 +163,22 @@ Todos os dados estão na planilha resultados_mandelbrot.xlsx
 
 **Limitações:**
 
-- Os testes foram até 8 threads.
+- Os testes foram feitos com até 8 threads.
 - Foi usada uma única entrada. Não foi testado como o desempenho muda com imagens maiores ou com mais iterações.
 - A leitura e a escrita não foram paralelizadas, mas juntas representam menos de 0,005% do tempo.
 - O cálculo foi mantido igual ao original para uma comparação justa.
 
 ## Contribuição de cada membro
 
-- Cauê de Almeida Gonçalves: Adicionado o temporizador no código sequencial e em paralelo e README
+- Cauê de Almeida Gonçalves: Adicionado o temporizador no código sequencial e em paralelo
 - Kayke Guilherme Vertu: Criação do script shell e execução dos testes
-- [Nome 3]: [ ]
+- Thaís Larriane: Análise de resultados e README
 
 ## Uso de LLM
 
 ### Planilha Excel
 
-Foi solicitado ao claude gerar a planilha para analise do código e gerar os relatórios para os gráficos.
+Foi solicitado ao Claude gerar a planilha para análise do código e gerar os relatórios para os gráficos.
 
 ### Dúvidas de montagem do README
 
@@ -196,6 +193,6 @@ Deverá conter os seguintes calculos: tempo/speedup/eficiência.
 
 ### Dúvidas na criação do script shell
 
-Foi solicitado ao ChatGPT um exemplo simples de um script shell que fizesse várias execuções de um único programa e guardasse o resultado em um arquivo. A partir do exemplo providenciado pela IA, o código foi extensivamente modificado para atender as nossas necessidades.
+Foi solicitado ao ChatGPT um exemplo simples de um script shell que fizesse várias execuções de um único programa e guardasse o resultado em um arquivo. A partir do exemplo fornecido pela IA, o código foi extensivamente modificado para atender as nossas necessidades.
 
 **Prompt utilizado:** Crie um script shell que execute um programa pelo terminal e salve o output em um arquivo. Permita que eu passe por parâmetro a quantidade de vezes que tem que ser executado
