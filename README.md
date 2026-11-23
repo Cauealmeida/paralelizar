@@ -47,9 +47,9 @@ Para fazer a comparação entre diferentes números de threads, foi alterado a c
 ## Descrição do problema e análise do código sequencial
 O programa irá gerar uma imagem em texto do conjunto de Mandelbrot, ele é formado pelos números complexos c para os quais a sequência z = z² + c não diverge.
 
-Cada pixel da imagem (230 linhas × 790 colunas) representa um ponto do plano complexo. O programa executa a fórmula até z passar de 2 ou até atingir 24.000 iterações. Pontos do conjunto são marcados com "#", e os demais com "." O cálculo ocupa [inserir tempo]% do tempo de execução ([ inserir tempo ] s). 
+Cada pixel da imagem (230 linhas × 790 colunas) representa um ponto do plano complexo. O programa executa a fórmula até z passar de 2 ou até atingir 24.000 iterações. Pontos do conjunto são marcados com "#", e os demais com "."
 
-O código tem três etapas: leitura da entrada e alocação da matriz, cálculo de todos os pixels e escrita da matriz na saída. Medindo cada etapa separadamente, o cálculo ocupa [ Inserir tempo ]% do tempo total ([inserir tempo] s), enquanto a leitura e a escrita juntas levam menos de [ inserir tempo ] ms. O custo computacional está, portanto, quase todo no laço de cálculo.
+O código tem três etapas: leitura da entrada e alocação da matriz, cálculo de todos os pixels e escrita da matriz na saída. Medindo cada etapa separadamente, o cálculo ocupa 99,995% do tempo total 23,48 s, enquanto a leitura e a escrita juntas levam menos de 1,1 ms. O custo computacional está, portanto, quase todo no laço de cálculo.
 
 A leitura e a escrita são descartáveis. Os pixels são independentes entre si, o que deixa possível paralelizar o cálculo. Porém, as iterações de um mesmo pixel são sequenciais, já que os valores dependem dos anteriores. O custo por pixel varia muito: cerca de 68.483 dos 181.700 pixels (38%) dos pixels pertencem ao conjunto e executam as 24.000 iterações, enquanto os demais terminam em poucas iterações. Esses pixels custosos estão nas linhas centrais, causando desbalanceamento de carga entre as threads.
 
