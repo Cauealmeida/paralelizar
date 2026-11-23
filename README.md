@@ -9,19 +9,40 @@ Aplicação: <https://github.com/hpc-fci-mackenzie/mpp/blob/master/17/mandelbrot
 
 ## Compilação e execução
 
-Compilar:
+### Compilação
 
-- Versão Sequêncial:
-  - Compilar o projeto: 
-    ```sh
-    make seq
-    ```
+Para compilar, use o makefile providenciado:
+
+```sh
+make # Gera todos os executáveis
+make original # Código original inalterado
+make seq # Código original, mas com temporizadores para fazer a análise
+make static # Paralelizado (distribuição estática)
+make dynamic # Paralelizado (distribuição dinâmica)
+make guided # Paralelizado (distribuição guiada)
+```
   
-  - Gerar as saídas 5 vezes:
-    ```sh
-    ./executar.sh seq.csv 5 "cat mandelbrot.in | ./seq"
-    ```
+### Execução
 
+Ao compilar, você pode chamar o programa passando os valores de entrada da forma como preferir. Segue um exemplo com o código sequencial:
+
+```sh
+cat mandelbrot.in | ./seq
+```
+
+Para facilitar os testes e geração dos resultados, foi criado um script shell básico para fazer execuções em massa:
+
+```sh
+# Uso: ./executar.sh [arquivo de saída] [nº de execuções] [comando]
+./executar.sh seq.csv 5 "cat mandelbrot.in | ./seq" # Usar aspas aqui é recomendado
+```
+
+Para fazer a comparação entre diferentes números de threads, foi alterado a constante OMP_NUM_THREADS, conforme exemplo a seguir
+
+```sh
+# Executa o código paralelizado estático com duas threads
+./executar.sh static2threads.csv 5 "cat mandelbrot.in | OMP_NUM_THREADS=2 ./static"
+```
 
 ## Descrição do problema e análise do código sequencial
 O programa irá gerar uma imagem em texto do conjunto de Mandelbrot, ele é formado pelos números complexos c para os quais a sequência z = z² + c não diverge.
@@ -152,23 +173,29 @@ Todos os dados estão na planilha resultados_mandelbrot.xlsx
 
 ## Contribuição de cada membro
 
-- Cauê de Almeida Gonçalves: Adicionado o temporizador no código sequencial e em paralelo e Read.me
-- [Nome 2]: [ ]
+- Cauê de Almeida Gonçalves: Adicionado o temporizador no código sequencial e em paralelo e README
+- Kayke Guilherme Vertu: Criação do script shell e execução dos testes
 - [Nome 3]: [ ]
 
 ## Uso de LLM
 
-**Planilha Excel**
+### Planilha Excel
+
 Foi solicitado ao claude gerar a planilha para analise do código e gerar os relatórios para os gráficos.
 
-**Dúvidas de montagem do Read.me**
-Foi solicitado ao claude como montar tabelas e inserir imagens no Read.me
+### Dúvidas de montagem do README
 
-**Prompt utilizado:**
+Foi solicitado ao Claude como montar tabelas e inserir imagens no README
+
+**Prompt utilizado**
+
 - Quero um excel para preencher dados de execuções de um código sequencial e em paralelo será executado 5 vezes e com 1, 2, 4, 8 threads. 
 Deverá conter os seguintes calculos: tempo/speedup/eficiência.
 - Como inserir imagens no Read.me
 - Como inserir dados em tabelas no Read.me
 
+### Dúvidas na criação do script shell
 
+Foi solicitado ao ChatGPT um exemplo simples de um script shell que fizesse várias execuções de um único programa e guardasse o resultado em um arquivo. A partir do exemplo providenciado pela IA, o código foi extensivamente modificado para atender as nossas necessidades.
 
+**Prompt utilizado:** Crie um script shell que execute um programa pelo terminal e salve o output em um arquivo. Permita que eu passe por parâmetro a quantidade de vezes que tem que ser executado

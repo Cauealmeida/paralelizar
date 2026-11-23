@@ -1,7 +1,7 @@
 CXX ?= g++
 FLAGS = -O3 -std=c++11
 
-all: original seq
+all: original seq static dynamic guided
 
 # Original, sem alterações
 original: mandelbrot.cpp
